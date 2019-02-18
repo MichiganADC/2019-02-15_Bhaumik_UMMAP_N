@@ -1,0 +1,88 @@
+---
+title: "2019-02-15_Bhaumik_UMMAP_N"
+author: "Nicolas May"
+date: "2/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Requirements
+
+## Load Libraries 
+
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+## Load Useful Variables
+
+```{r}
+source("~/Desktop/config.R")
+source("~/Desktop/helpers.R")
+rm(BOX_CLIENT_ID); rm(BOX_CLIENT_SECRET); rm(BOX_REDIRECT_URI)
+```
+
+
+# Get Data
+
+## Define Data Fields
+
+### UDS 3
+
+```{r}
+fields_u3_raw <-
+  c(
+    "ptid"
+    , "form_date"
+    , "mrn"
+    , "tvp_a1_complete"
+    , "m1_complete"
+  )
+fields_u3 <- fields_u3_raw %>% paste(collapse = ",")
+```
+
+## Retrieve Data via REDCap API
+
+```{r}
+json_u3 <- rc_api_get(uri    = REDCAP_API_URI,
+                      token  = REDCAP_API_TOKEN_UDS3n,
+                      fields = fields_u3)
+df_u3 <- jsonlite::fromJSON(json_u3) %>% 
+  na_if("") %>%
+  readr::type_convert(df = ., trim_ws = TRUE)
+```
+
+
+# Process Data
+
+## Clean Data
+
+### UDS 3
+
+```{r}
+df_u3_cln <- df_u3 %>% 
+  # remove DDE records
+  filter(str_detect(ptid, "^UM\\d{8}$")) %>%
+  # remove missing `form_date` records
+  filter(!is.na(form_date))
+```
+
+## Filter Data
+
+### UDS 3
+
+```{r}
+df_u3_cln_ivp <- df_u3_cln %>% 
+  # get visit 1 (first visit)
+  get_visit_n(ptid, form_date, n = 1)
+```
+
+
+
+
+
+
